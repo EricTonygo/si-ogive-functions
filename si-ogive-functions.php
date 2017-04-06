@@ -49,6 +49,19 @@ add_filter('wp_mail_from_name', 'wpb_sender_name');
 //    add_theme_support('woocommerce');
 //}
 
+/*-----------------------------------------------------------------------*/
+// Filter search results
+/*-----------------------------------------------------------------------*/
+add_filter('pre_get_posts', function($query)
+{
+    if ($query->is_search && !is_admin())
+    {
+        $query->set('post_type',array('post', 'job', 'service', 'area-expertise', 'forum', 'topic'));
+    }
+
+    return $query;
+});
+
 function childtheme_formats() {
     add_theme_support('post-thumbnails');
     add_theme_support('post-formats', array('aside', 'gallery', 'link'));
@@ -232,7 +245,7 @@ function get_published_questions() {
 function add_slider_to_home() {
     $home = (int) get_option('page_on_front');
     if (themosis_is_post($home)) {
-        remove_post_type_support('page', 'editor');
+        //remove_post_type_support('page', 'editor');
         Metabox::make("Image à la une pour le slider de la page d'accueil", 'page')->set(array(
             Field::infinite('sliders', array(
                 Field::media('slider-image')
@@ -312,11 +325,16 @@ function get_password() {
     }
 }
 
-//Function of login in si-ogive front-end website
-function login() {
-    $username = $_POST['_username'];
-    $password = $_POST['_password'];
-    if (isset($_POST['_remember']) && $_POST['_remember'] == 'true') {
+//This function Un-quotes a quoted string even if it is more than one
+function removeslashes($string) {
+    $string = implode("", explode("\\", $string));
+    return stripslashes(trim($string));
+}
+
+
+//Function of sign in si-ogive front-end website
+function signin($username, $password, $remember = null, $redirect_to = null) {
+    if ($remember && $remember == 'true') {
         $remember = true;
     } else {
         $remember = false;
@@ -332,10 +350,15 @@ function login() {
         $creds = array('user_login' => $user->data->user_login, 'user_password' => $password, 'remember' => $remember);
         $secure_cookie = is_ssl() ? true : false;
         $user = wp_signon($creds, $secure_cookie);
-        wp_safe_redirect(get_permalink(get_page_by_path(__('mon-compte', 'gpdealdomain'))));
+        if ($redirect_to) {
+            wp_safe_redirect($redirect_to);
+        } else {
+            wp_safe_redirect(home_url('/'));
+        }
         exit;
     } else {
-        wp_safe_redirect(home_url('/'));
+        $_SESSION['signin_error'] = __("Nom d'utilisateur ou mot de passe incorrect");
+        wp_safe_redirect(get_permalink(get_page_by_path(__('connexion', 'gpdealdomain'))));
         exit;
     }
 }
@@ -445,17 +468,17 @@ function getCitiesListOfState($stateCode = null) {
     return $cities;
 }
 
-function apply_job($job_id) {
-    $firstname = esc_attr(trim($_POST['firstname']));
-    $lastname = esc_attr(trim($_POST['lastname']));
-    $email = esc_attr(trim($_POST['email']));
-    $phone = esc_attr(trim($_POST['phone']));
-    $address = esc_attr(trim($_POST['address']));
-    $country = esc_attr(trim($_POST['country']));
-    $qualifications = esc_attr(trim($_POST['qualifications']));
-    $lastdiploma = esc_attr(trim($_POST['lastdiploma']));
-    $skills = esc_attr(trim($_POST['skills']));
-    $experience = esc_attr(trim($_POST['experience']));
+function apply_job($job_id, $application_data) {
+    $firstname = $application_data['firstname'];
+    $lastname = $application_data['lastname'];
+    $email = $application_data['email'];
+    $phone = $application_data['phone'];
+    $address = $application_data['address'];
+    $country = $application_data['country'];
+    $qualifications = $application_data['qualifications'];
+    $lastdiploma = $application_data['lastdiploma'];
+    $skills = $application_data['skills'];
+    $experience = $application_data['experience'];
     $attachments = array();
 
     $job = get_post($job_id);
@@ -506,7 +529,7 @@ function apply_job($job_id) {
     $body = ob_get_contents();
     ob_end_clean();
     if (wp_mail($to, $subject, $body, $headers, $attachments)) {
-        $_SESSION['success_message'] = "Votre candidature a été envoyée avec succès. \n Vous serez contacter par mail ou appel téléphonique dès l'examination de votre candidature.";
+        $_SESSION['success_message'] = "Votre candidature a été envoyée avec succès. \n Vous serez contacter par mail ou appel téléphonique dès l'examination de votre candidature. Merci !";
         //$_SESSION['success_message'] = $subject;
     } else {
         //$_SESSION['error_message'] = $subject;
