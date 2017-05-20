@@ -8,11 +8,11 @@
   Author URI: https://gpdeal.com/
  */
 
-use Themosis\Facades\Action;
-use Themosis\Facades\User;
-use Themosis\Facades\Section;
-use Themosis\Facades\Field;
-use Themosis\Facades\Metabox;
+//use Themosis\Facades\Action;
+//use Themosis\Facades\User;
+//use Themosis\Facades\Section;
+//use Themosis\Facades\Field;
+//use Themosis\Facades\Metabox;
 
 add_action('after_setup_theme', 'my_theme_supports');
 
@@ -41,50 +41,11 @@ function wpb_sender_name($original_name_from) {
     }
 }
 
-//Fonction to override a default new user notification message
-function wp_new_user_notification($user_id, $plaintext_pass) {
-    $user = new WP_User($user_id);
-
-    $user_login = stripslashes($user->user_login);
-    $user_email = stripslashes($user->user_email);
-    $last_name = stripslashes($user->data->last_name);
-
-    $email_subject = "Bienvenue à " . get_option('blogname') . " " . $last_name . "!";
-
-    ob_start();
-    ?>
-
-    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Bienvenue spécial à vous <?php echo $last_name; ?>. Merci d'avoir rejoint <?php echo get_option('blogname'); ?> </p>
-    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Nous vous communiquons ici vos identifiants pour vous connectez au site internet de <a href="<?php echo home_url('/') ?>">SI OGIVE</a>.</p>
-    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">
-    <ul style="font-style: italic; font-size: 12.8px; list-style-type: none;">
-        <li>- Login : <?php echo $user_email; ?> ou <?php echo $user_login ?></li>
-        <li>- Mot de passe : <?php echo $plaintext_pass; ?></li>
-    </ul>
-    </p>
-    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Ces identifiants vous permettrons d'avoir accès au détails des appels d'offres qui vous seront envoyés par SMS et mail puis publiés sur notre site internet à l'adresse <a href="<?php echo home_url('/') ?>"><?php echo home_url('/') ?></a> .</p>
-    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Vous pourriez aussi par la même occasion prendre part aux différents forums de discussion sur les marchés publics au Cameroun disponibles sur notre site internet et accessibles à partir de ce lien <a href="<?php echo get_permalink(get_page_by_path(__('forums', 'siogivedomain'))) ?>">Nos Forums</a> .</p>
-    <br>
-    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Pour des raisons de sécurité, nous vous conseillons de garder soignesement vos identifiants.</p>
-    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Vous remerciant de votre confiance, nous restons à votre disposition pour toute information complémentaire.</p>
-    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Cordialement,</p>
-    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">L'équipe <?php echo get_option('blogname'); ?></p>
-    <p><a href="<?php echo home_url('/'); ?>"><img src="<?php echo get_template_directory_uri() ?>/assets/img/large_logo_2.PNG" style="width: 450px;"></a></p>
-    <p style=" font-size: 12.8px; margin-bottom: 1em;">Siège social Yaoundé BP: 5253, Situé à la Nouvelle route Bastos face Ariane TV Rue N°1839</p>
-    <p style=" font-size: 12.8px; margin-bottom: 1em;">Email: contact@siogive.com,  Tel: (+237)243804388/(+237)243803895</p>
-
-    <?php
-    $message = ob_get_contents();
-    ob_end_clean();
-
-    wp_mail($user_email, $email_subject, $message);
-}
-
 // Hooking up our functions to WordPress filters
 add_filter('wp_mail_from', 'wpb_sender_email');
 add_filter('wp_mail_from_name', 'wpb_sender_name');
 
-//Add additional role customer for every user because we want to use it in woocommerce
+//Add additional role bb_participant for every user because we use it in bb_press
 add_action('user_register', 'add_secondary_role', 10, 1);
 
 function add_secondary_role($user_id) {
@@ -92,6 +53,43 @@ function add_secondary_role($user_id) {
     $user = get_user_by('id', $user_id);
     $user->add_role('bbp_participant');
 }
+
+
+//Fonction to override a default new user notification message
+function siogive_new_user_notification($user_id) {
+    $user = get_userdata($user_id);
+
+    $user_login = stripslashes($user->user_login);
+    $user_email = stripslashes($user->user_email);
+    $last_name = stripslashes($user->last_name);
+
+    $subject = "Bienvenue à " . get_option('blogname') . " " . $last_name . " !";
+
+    ob_start();
+    ?>
+    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Bienvenue spécial à vous <?php echo $last_name; ?>. Merci d'avoir rejoint <?php echo get_option('blogname'); ?> </p>
+    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Nous vous communiquons ici vos identifiants pour vous connecter à notre site web: <a href="<?php echo home_url('/') ?>">www.siogive.com</a>.</p>
+    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">
+    <ul style="font-style: italic; font-size: 12.8px; list-style-type: none;">
+        <li>- Login : <?php echo $user_email; ?> ou <?php echo $user_login ?></li>
+        <li>- Mot de passe : <?php echo get_user_meta($user_id, 'plain-text-password', true); ?></li>
+    </ul>
+    </p>
+    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Ces identifiants vous permettrons d'avoir accès aux détails des appels d'offres qui vous seront envoyés par SMS et mail puis publiés sur notre site internet.</p>
+    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Vous pourriez aussi par la même occasion prendre part aux différents forums de discussion sur les marchés publics au Cameroun disponibles sur notre site internet et accessibles à partir de ce lien <a href="<?php echo get_permalink(get_page_by_path(__('forums', 'siogivedomain'))) ?>">Nos Forums</a> .</p>
+    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Pour des raisons de sécurité, nous vous conseillons de garder soignesement vos identifiants.</p>
+        <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Vous remerciant de votre confiance, nous restons à votre disposition pour toute information complémentaire.</p>
+        <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Cordialement,</p>
+        <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">L'équipe <?php echo get_option('blogname'); ?></p>
+        <p><a href="<?php echo home_url('/'); ?>"><img src="<?php echo get_template_directory_uri() ?>/assets/img/large_logo_2.PNG" style="width: 450px;"></a></p>
+        <p style=" font-size: 12px; margin-bottom: 1em; color: grey;">Siège social: Yaoundé, BP: 5253, Situé à la Nouvelle route Bastos face Ariane TV Rue N°1839</p>
+        <p style=" font-size: 12px; margin-bottom: 1em; color: grey;">Email: contact@siogive.com,  Tel: +237243804388/+237243803895</p>
+    <?php
+    $message = ob_get_contents();
+    ob_end_clean();
+    return array("email"=> $user_email, "subject"=> $subject , "message"=>$message);
+}
+
 
 /* ----------------------------------------------------------------------- */
 // Filter search results
@@ -110,18 +108,8 @@ function childtheme_formats() {
 }
 
 function my_theme_supports() {
-    //woocommerce_support();
     childtheme_formats();
 }
-
-//Add additional role customer for every user because we want to use it in woocommerce
-//add_action('user_register', 'add_secondary_role', 10, 1);
-//
-//function add_secondary_role($user_id) {
-//
-//    $user = get_user_by('id', $user_id);
-//    $user->add_role('customer');
-//}
 
 function bbx_images($html) {
     $html = preg_replace('/(width|height)="\d*"\s/', "", $html);
@@ -510,7 +498,7 @@ function my_custom_init() {
     post_type_assignment_init();
     post_type_calloffer_init();
     post_type_experessionInterest_init();
-    add_slider_to_home();
+    //add_slider_to_home();
 }
 
 function get_published_questions() {
@@ -530,21 +518,21 @@ function get_published_questions() {
 }
 
 //Add user Customs fields for Home page (Slider Images)
-function add_slider_to_home() {
-    $home = (int) get_option('page_on_front');
-    if (themosis_is_post($home)) {
-        //remove_post_type_support('page', 'editor');
-        Metabox::make("Image à la une pour le slider de la page d'accueil", 'page')->set(array(
-            Field::infinite('sliders', array(
-                Field::media('slider-image')
-                    ), array('title' => "Image à la une"))
-        ));
-
-        Metabox::make(__("Message de la vision de OGIVE à l'acceuil", 'si-ogivedomain'), 'page')->set(array(
-            Field::textarea('our-vision-home', ['title' => 'Notre Vision'])
-        ));
-    }
-}
+//function add_slider_to_home() {
+//    $home = (int) get_option('page_on_front');
+//    if (themosis_is_post($home)) {
+//        //remove_post_type_support('page', 'editor');
+//        Metabox::make("Image à la une pour le slider de la page d'accueil", 'page')->set(array(
+//            Field::infinite('sliders', array(
+//                Field::media('slider-image')
+//                    ), array('title' => "Image à la une"))
+//        ));
+//
+//        Metabox::make(__("Message de la vision de OGIVE à l'acceuil", 'si-ogivedomain'), 'page')->set(array(
+//            Field::textarea('our-vision-home', ['title' => 'Notre Vision'])
+//        ));
+//    }
+//}
 
 //Function for leaving a message in contact form on the website
 function leave_message() {
@@ -599,7 +587,7 @@ function get_password() {
         $unique_user_email = get_user_by('email', $user_email);
         $plain_text_password = get_user_meta($user_id, 'plain-text-password', true);
         $headers[] = 'Content-Type: text/html; charset=UTF-8';
-        $headers[] = 'From: OGIVE INFOS <infos@gpdeal.com>';
+        $headers[] = 'From: OGIVE INFOS <infos@siogive.com>';
         //$headers[] = 'Reply-To:' . Input::get('nom') . ' <' . $data['adress'] . '>';
         //$headers[] = 'Bcc:<apatchong@gmail.com>';
         $headers[] = 'Bcc:<erictonyelissouck@yahoo.fr>';
@@ -706,8 +694,8 @@ function register_user_api($user_data = null) {
         update_user_meta($user_id, 'plain-text-password', $user_data['user_pass']);
         update_user_meta($user_id, 'state', intval($user_data['state']));
         update_user_meta($user_id, 'expired-state', intval($user_data['expired_state']));
-        $json = array("message" => "Votre compte a été créé avec succès");
-        return wp_send_json_success($json);
+        //Create a return message for user in front end
+        return wp_send_json_success(siogive_new_user_notification($user_id));
     } else {
         $json = array("message" => "Une erreur s'est produite pendant la création du compte");
         return wp_send_json_error($json);
@@ -728,8 +716,8 @@ function update_user_api($user_id, $user_data = null) {
     if (!is_wp_error($user_id)) {
         update_user_meta($user_id, 'state', intval($user_data['state']));
         update_user_meta($user_id, 'expired-state', intval($user_data['expired_state']));
-        $json = array("message" => "Votre compte a été mis à jour avec succès");
-        return wp_send_json_success($json);
+        //Create a return message for user in front end
+        return wp_send_json_success(siogive_new_user_notification($user_id));
     } else {
         $json = array("message" => "Une erreur s'est produite pendant la mise à jour du compte");
         return wp_send_json_error($json);
