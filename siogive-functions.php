@@ -5,7 +5,7 @@
   Version: 0.1
   License: GPL
   Author: Eric TONYE
-  Author URI: https://gpdeal.com/
+  Author URI: https://siogive.com/
  */
 
 //use Themosis\Facades\Action;
@@ -17,6 +17,15 @@
 add_action('after_setup_theme', 'my_theme_supports');
 
 add_action('init', 'my_custom_init');
+
+function wpse66093_no_admin_access() {
+    $redirect = home_url('/');
+    if (is_admin() && !current_user_can('manage_options') && !wp_doing_ajax()) {
+        exit(wp_redirect($redirect));
+    }
+}
+
+add_action('admin_init', 'wpse66093_no_admin_access', 100);
 
 function my_awesome_mail_content_type() {
     return "text/html";
@@ -45,6 +54,66 @@ function wpb_sender_name($original_name_from) {
 add_filter('wp_mail_from', 'wpb_sender_email');
 add_filter('wp_mail_from_name', 'wpb_sender_name');
 
+add_action('show_user_profile', 'my_show_extra_profile_fields');
+add_action('edit_user_profile', 'my_show_extra_profile_fields');
+
+function my_show_extra_profile_fields($user) {
+    ?>
+    <h3>Extra profile information</h3>
+    <table class="form-table">
+        <tr>
+            <th><label for="twitter">State</label></th>
+            <td>
+                <select name="state">
+                    <option>Select a state</option>
+                    <option value="0" <?php if (get_the_author_meta('state', $user->ID) == 0): ?> selected="selected"<?php endif ?>>Désactivé</option>
+                    <option value="1" <?php if (get_the_author_meta('state', $user->ID) == 1): ?> selected="selected"<?php endif ?>>Activé</option>
+                </select>
+    <!--                <input type="text" name="twitter" id="twitter" value="<?php echo esc_attr(get_the_author_meta('twitter', $user->ID)); ?>" class="regular-text" /><br />
+                <span class="description">Please enter your Twitter username.</span>-->
+            </td>
+        </tr>
+    </table>
+    <?php
+}
+
+add_action('personal_options_update', 'my_save_extra_profile_fields');
+add_action('edit_user_profile_update', 'my_save_extra_profile_fields');
+
+function my_save_extra_profile_fields($user_id) {
+    if (!current_user_can('edit_user', $user_id))
+        return false;
+    /* Copy and paste this line for additional fields. Make sure to change 'twitter' to the field ID. */
+    update_usermeta($user_id, 'state', $_POST['state']);
+}
+
+add_action('register_form', 'show_first_name_field');
+add_action('registration_errors', 'check_fields', 10, 3);
+add_action('user_register', 'register_extra_fields');
+
+function show_first_name_field() {
+    ?>
+    <p>
+        <label>Twitter<br/>
+            <input id="user_email" type="text" tabindex="30" size="25" value="<?php echo $_POST['twitter']; ?>" name="twitter" />
+        </label>
+    </p>
+    <?php
+}
+
+function check_fields($login, $email, $errors) {
+    global $twitter;
+    if ($_POST['twitter'] == '') {
+        $errors->add('empty_realname', "<strong>ERROR</strong>: Please Enter your twitter handle");
+    } else {
+        $twitter = $_POST['twitter'];
+    }
+}
+
+function register_extra_fields($user_id, $password = "", $meta = array()) {
+    update_user_meta($user_id, 'twitter', $_POST['twitter']);
+}
+
 //Add additional role bb_participant for every user because we use it in bb_press
 add_action('user_register', 'add_secondary_role', 10, 1);
 
@@ -54,6 +123,21 @@ function add_secondary_role($user_id) {
     $user->add_role('bbp_participant');
 }
 
+add_action('profile_update', 'custom_profile_update_function', 10, 2);
+
+function custom_profile_update_function($user_id, $old_user_data) {
+//    $headers[] = 'Content-Type: text/html; charset=UTF-8';
+//        $headers[] = 'From: OGIVE INFOS <infos@siogive.com>';
+//        $headers[] = 'Bcc:<erictonyelissouck@yahoo.fr>';
+//
+//        $to = "tonye.eric@gmail.com";
+//
+//        $subject = "Test subject";
+//
+//        $body = "Test content";
+//        wp_mail($to, $subject, $body, $headers);
+    add_secondary_role($user_id);
+}
 
 //Fonction to override a default new user notification message
 function siogive_new_user_notification($user_id) {
@@ -67,29 +151,44 @@ function siogive_new_user_notification($user_id) {
 
     ob_start();
     ?>
-    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Bienvenue spécial à vous <?php echo $last_name; ?>. Merci d'avoir rejoint <?php echo get_option('blogname'); ?> </p>
-    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Nous vous communiquons ici vos identifiants pour vous connecter à notre site web: <a href="<?php echo home_url('/') ?>">www.siogive.com</a>.</p>
-    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">
-    <ul style="font-style: italic; font-size: 12.8px; list-style-type: none;">
+    <p style="font-size: 12.8px; margin-bottom: 1em;">Bienvenue spécial à vous <?php echo $last_name; ?>. Merci d'avoir rejoint <?php echo get_option('blogname'); ?> </p>
+    <p style="font-size: 12.8px; margin-bottom: 1em;">Nous vous communiquons ici vos identifiants pour vous connecter à notre site web: <a href="<?php echo home_url('/') ?>">www.siogive.com</a>.</p>
+    <p style="font-size: 12.8px; margin-bottom: 1em;">
+    <ul style="font-size: 12.8px; list-style-type: none;">
         <li>- Login : <?php echo $user_email; ?> ou <?php echo $user_login ?></li>
         <li>- Mot de passe : <?php echo get_user_meta($user_id, 'plain-text-password', true); ?></li>
     </ul>
     </p>
-    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Ces identifiants vous permettrons d'avoir accès aux détails des appels d'offres qui vous seront envoyés par SMS et mail puis publiés sur notre site internet.</p>
-    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Vous pourriez aussi par la même occasion prendre part aux différents forums de discussion sur les marchés publics au Cameroun disponibles sur notre site internet et accessibles à partir de ce lien <a href="<?php echo get_permalink(get_page_by_path(__('forums', 'siogivedomain'))) ?>">Nos Forums</a> .</p>
-    <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Pour des raisons de sécurité, nous vous conseillons de garder soignesement vos identifiants.</p>
-        <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Vous remerciant de votre confiance, nous restons à votre disposition pour toute information complémentaire.</p>
-        <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">Cordialement,</p>
-        <p style="font-style: italic; font-size: 12.8px; margin-bottom: 1em;">L'équipe <?php echo get_option('blogname'); ?></p>
-        <p><a href="<?php echo home_url('/'); ?>"><img src="<?php echo get_template_directory_uri() ?>/assets/img/large_logo_2.PNG" style="width: 450px;"></a></p>
-        <p style=" font-size: 12px; margin-bottom: 1em; color: grey;">Siège social: Yaoundé, BP: 5253, Situé à la Nouvelle route Bastos face Ariane TV Rue N°1839</p>
-        <p style=" font-size: 12px; margin-bottom: 1em; color: grey;">Email: contact@siogive.com,  Tel: +237243804388/+237243803895</p>
+    <p style="font-size: 12.8px; margin-bottom: 1em;">Ces identifiants vous permettrons d'avoir accès aux détails des appels d'offres qui vous seront envoyés par SMS et email puis publiés sur notre site internet.</p>
+    <p style="font-size: 12.8px; margin-bottom: 1em;">Vous pourriez aussi par la même occasion prendre part aux différents forums de discussion sur les marchés publics au Cameroun disponibles sur notre site internet et accessibles à partir de ce lien <a href="<?php echo get_permalink(get_page_by_path(__('forums', 'siogivedomain'))) ?>">Nos Forums</a> .</p>
+    <p style="font-size: 12.8px; margin-bottom: 1em;">Pour des raisons de sécurité, nous vous conseillons de garder soignesement vos identifiants.</p>
+    <p style="font-size: 12.8px; margin-bottom: 1em;">Vous remerciant de votre confiance, nous restons à votre disposition pour toute information complémentaire.</p>
+    <p style="font-size: 12.8px; margin-bottom: 1em;">Cordialement,</p>
+    <p style="font-size: 12.8px; margin-bottom: 1em;">L'équipe <?php echo get_option('blogname'); ?></p>
+    <p><a href="<?php echo home_url('/'); ?>"><img src="<?php echo get_template_directory_uri() ?>/assets/img/large_logo_2.PNG" style="width: 450px;"></a></p>
+    <p style="font-size: 12px; margin-bottom: 1em; color: grey;">Siège social: Yaoundé, BP: 5253, Situé à la Nouvelle route Bastos face Ariane TV Rue N°1839</p>
+    <p style="font-size: 12px; margin-bottom: 1em; color: grey;">Email: <a href="mailto:contact@siogive.com">contact@siogive.com</a>/<a href="mailto:siogivesas@gmail.com">siogivesas@gmail.com</a>,  Tel: +237243804388/+237243803895</p>
     <?php
     $message = ob_get_contents();
     ob_end_clean();
-    return array("email"=> $user_email, "subject"=> $subject , "message"=>$message);
+    return array("email" => $user_email, "subject" => $subject, "message" => $message);
 }
 
+add_action('register_form', 'myplugin_add_registration_fields');
+
+function myplugin_add_registration_fields() {
+
+    //Get and set any values already sent
+    $user_extra = ( isset($_POST['user_extra']) ) ? $_POST['user_extra'] : '';
+    ?>
+
+    <p>
+        <label for="user_extra"><?php _e('Extra Field', 'gpdealdomain') ?><br />
+            <input type="text" name="user_extra" id="user_extra" class="input" value="<?php echo esc_attr(stripslashes($user_extra)); ?>" size="25" /></label>
+    </p>
+
+    <?php
+}
 
 /* ----------------------------------------------------------------------- */
 // Filter search results
@@ -109,6 +208,10 @@ function childtheme_formats() {
 
 function my_theme_supports() {
     childtheme_formats();
+    /* ----------------------------------------------------------------------------- */
+    //Prevent wordpress to display version of wordpress installation
+    /* ----------------------------------------------------------------------------- */
+    remove_action('wp_head', 'wp_generator');
 }
 
 function bbx_images($html) {
@@ -397,7 +500,7 @@ function post_type_calloffer_init() {
         'delete_with_user' => true,
         'query_var' => true,
         'taxonomies' => array('category', 'post_tag'),
-        'rewrite' => array('slug' => 'call-offer'),
+        'rewrite' => array('slug' => 'aao'),
         'capability_type' => 'post',
         'has_archive' => true,
         'hierarchical' => false,
@@ -437,7 +540,7 @@ function post_type_experessionInterest_init() {
         'delete_with_user' => true,
         'query_var' => true,
         'taxonomies' => array('category', 'post_tag'),
-        'rewrite' => array('slug' => 'expression-interest'),
+        'rewrite' => array('slug' => 'asmi'),
         'capability_type' => 'post',
         'has_archive' => true,
         'hierarchical' => false,
@@ -477,7 +580,7 @@ function post_type_assignment_init() {
         'delete_with_user' => true,
         'query_var' => true,
         'taxonomies' => array('category', 'post_tag'),
-        'rewrite' => array('slug' => 'assignment'),
+        'rewrite' => array('slug' => 'decision'),
         'capability_type' => 'post',
         'has_archive' => true,
         'hierarchical' => false,
@@ -533,7 +636,6 @@ function get_published_questions() {
 //        ));
 //    }
 //}
-
 //Function for leaving a message in contact form on the website
 function leave_message() {
     $sender_name = esc_attr(trim($_POST['sender_name']));
@@ -543,7 +645,7 @@ function leave_message() {
     $headers[] = 'Content-Type: text/html; charset=UTF-8';
     $headers[] = 'From: ' . $sender_name . ' <' . $sender_email . '>';
     //$headers[] = 'Reply-To:' . Input::get('nom') . ' <' . $data['adress'] . '>';
-    $headers[] = 'Bcc:<erictonyelissouck@yahoo.fr>';
+    $headers[] = 'Bcc:<siogivesas@gmail.com>';
 
     $to = get_bloginfo('admin_email');
 
@@ -552,10 +654,10 @@ function leave_message() {
     $body = $sender_message;
 
     if (wp_mail($to, $subject, $body, $headers)) {
-        $json = array("message" => __("Votre message a été envoyé avec succès", 'si-ogivedomain'));
+        $json = array("message" => __("Votre message a été envoyé avec succès", 'siogivedomain'));
         return wp_send_json_success($json);
     } else {
-        $json = array("message" => __("Un erreur s'est produite lors de l'envoi du message. Reessayez à nouveau", 'si-ogivedomain'));
+        $json = array("message" => __("Un erreur s'est produite lors de l'envoi du message. Reessayez à nouveau", 'siogivedomain'));
         return wp_send_json_error($json);
     }
 }
@@ -588,8 +690,6 @@ function get_password() {
         $plain_text_password = get_user_meta($user_id, 'plain-text-password', true);
         $headers[] = 'Content-Type: text/html; charset=UTF-8';
         $headers[] = 'From: OGIVE INFOS <infos@siogive.com>';
-        //$headers[] = 'Reply-To:' . Input::get('nom') . ' <' . $data['adress'] . '>';
-        //$headers[] = 'Bcc:<apatchong@gmail.com>';
         $headers[] = 'Bcc:<erictonyelissouck@yahoo.fr>';
 
         $to = $user_email;
@@ -626,32 +726,33 @@ function signin($username, $password, $remember = null, $redirect_to = null) {
 //        $expired_state = get_user_meta($user->ID, 'expired-state', true);
 //        if (!is_null($expired_state) && $expired_state == "1") {
 //            $_SESSION['signin_error'] = __("Votre abonnement a expiré");
-//            wp_safe_redirect(get_permalink(get_page_by_path(__('connexion', 'gpdealdomain'))));
+//            wp_safe_redirect(get_permalink(get_page_by_path(__('connexion', 'siogivedomain'))));
 //            exit;
-//        }elseif (!is_null($state) && $state == "0") {
+//        } elseif (!is_null($state) && $state == "0") {
 //            $_SESSION['signin_error'] = __("Votre compte a été désactivé");
-//            wp_safe_redirect(get_permalink(get_page_by_path(__('connexion', 'gpdealdomain'))));
+//            wp_safe_redirect(get_permalink(get_page_by_path(__('connexion', 'siogivedomain'))));
 //            exit;
 //        } else {
-        $creds = array('user_login' => $user->data->user_login, 'user_password' => $password, 'remember' => $remember);
-        $secure_cookie = is_ssl() ? true : false;
-        $user = wp_signon($creds, $secure_cookie);
-        if ($redirect_to) {
-            wp_safe_redirect($redirect_to);
-        } else {
-            wp_safe_redirect(home_url('/'));
-        }
-        exit;
+            $creds = array('user_login' => $user->data->user_login, 'user_password' => $password, 'remember' => $remember);
+            $secure_cookie = is_ssl() ? true : false;
+            $user = wp_signon($creds, $secure_cookie);
+            if ($redirect_to) {
+                wp_safe_redirect($redirect_to);
+            } else {
+                wp_safe_redirect(home_url('/'));
+            }
+            exit;
 //        }
     } else {
         $_SESSION['signin_error'] = __("Nom d'utilisateur ou mot de passe incorrect");
-        wp_safe_redirect(get_permalink(get_page_by_path(__('connexion', 'gpdealdomain'))));
+        wp_safe_redirect(get_permalink(get_page_by_path(__('connexion', 'siogivedomain'))));
         exit;
     }
 }
 
 //Function of registration user account from siogive front-end website.
 function register_user($user_data = null) {
+    global $current_user;
     $new_user_data = array(
         'user_login' => $user_data['user_login'],
         'user_pass' => $user_data['user_pass'],
@@ -675,6 +776,61 @@ function register_user($user_data = null) {
     } else {
         $json = array("message" => "Une erreur s'est produite pendant la création du compte");
         return wp_send_json_error($json);
+    }
+}
+
+//Function of updating user account from siogive front-end website.
+function update_user($user_data = null) {
+    global $current_user;
+    $new_user_data = array(
+        'ID' => get_current_user_id(),
+        'user_login' => $user_data['user_login'],
+        'user_email' => $user_data['user_email'],
+        'first_name' => $user_data['first_name'],
+        'last_name' => $user_data['last_name']
+    );
+    $user_id = wp_update_user($new_user_data);
+
+    if (!is_wp_error($user_id)) {
+        // Set the global user object
+        $current_user = get_user_by('id', $user_id);
+
+        // set the WP login cookie
+        $secure_cookie = is_ssl() ? true : false;
+        wp_set_auth_cookie($user_id, true, $secure_cookie);
+        $json = array("message" => "Votre compte a été mis à jour avec succès");
+        return wp_send_json_success($json);
+    } else {
+        $json = array("message" => "Une erreur s'est produite pendant la création du compte");
+        return wp_send_json_error($json);
+    }
+}
+
+//Function for getting forgot password of user
+function gp_reset_password() {
+    $current_user = wp_get_current_user();
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+        $old_password = esc_attr($_POST['old_password']);
+        if ($current_user && wp_check_password($old_password, $current_user->data->user_pass, $current_user->ID)) {
+            $json = array("message" => __("Correct informations", "gpdealdomain"));
+            return wp_send_json_success($json);
+        } else {
+            $json = array("message" => __("Incorrect password", "gpdealdomain"));
+            return wp_send_json_error($json);
+        }
+    } else {
+        $old_password = esc_attr($_POST['old_password']);
+        $new_password = esc_attr($_POST['new_password']);
+        if ($current_user && wp_check_password($old_password, $current_user->data->user_pass, $current_user->ID)) {
+            update_user_meta($current_user->ID, 'plain-text-password', $new_password);
+            wp_set_password($new_password, $current_user->ID);
+            wp_safe_redirect(home_url('/'));
+            exit;
+        } else {
+            $_SESSION['reset_password_error'] = __("Unable to change password", "gpdealdomain");
+            wp_safe_redirect(get_permalink(get_page_by_path(__("modifier-mon-mot-de-passe", 'siogivedomain'))));
+            exit;
+        }
     }
 }
 
@@ -748,6 +904,7 @@ function saveAdditive($additive_data) {
         $additive_files_ids = $additive_data['additive_files_ids'];
         $post_args = array(
             'post_title' => $reference,
+            'post_name'=> explode("/", $reference)[0],
             'post_content' => $subject,
             'post_type' => 'additive',
             'post_status' => 'publish',
@@ -785,6 +942,7 @@ function saveCallOffer($callOffer_data) {
         $callOffer_files_ids = $callOffer_data['call_offer_files_ids'];
         $post_args = array(
             'post_title' => $reference,
+            'post_name'=> explode("/", $reference)[0],
             'post_content' => $subject,
             'post_type' => 'call-offer',
             'post_status' => 'publish',
@@ -822,6 +980,7 @@ function saveAssignment($assignment_data) {
         $assignment_files_ids = $assignment_data['assignment_files_ids'];
         $post_args = array(
             'post_title' => $reference,
+            'post_name'=> explode("/", $reference)[0],
             'post_content' => $subject,
             'post_type' => 'assignment',
             'post_status' => 'publish',
@@ -853,12 +1012,13 @@ function saveExpressionInterest($expressionInterest_data) {
     $expressionInterest_id = null;
     if ($expressionInterest_data) {
         $reference = $expressionInterest_data['reference'];
-        $subject= $expressionInterest_data['subject'];
+        $subject = $expressionInterest_data['subject'];
         $domain = $expressionInterest_data['main_domain'];
         $sub_domain = $expressionInterest_data['sub_domain'];
         $expressionInterest_files_ids = $expressionInterest_data['expression_interest_files_ids'];
         $post_args = array(
             'post_title' => $reference,
+            'post_name'=> explode("/", $reference)[0],
             'post_content' => $subject,
             'post_type' => 'expression-interest',
             'post_status' => 'publish',
@@ -958,12 +1118,11 @@ function apply_job($job_id, $application_data) {
         $attachments[] = $file_path;
     }
 
-    //$headers[] = 'Content-Type: text/html; charset=UTF-8';
+    $headers[] = 'Content-Type: text/html; charset=UTF-8';
     $headers[] = 'From: ' . $lastname . ' <' . $email . '>';
-    $headers[] = 'Bcc:<erictonyelissouck@yahoo.fr>';
+    $headers[] = 'Bcc:<siogivesas@gmail.com>';
 
     $to = get_bloginfo('admin_email');
-    //$to = "erictonyelissouck@yahoo.fr";
     $categories = get_the_category($job_id);
     $job_category = "";
     if (!empty($categories)) {
@@ -979,7 +1138,7 @@ function apply_job($job_id, $application_data) {
         <strong>Nom</strong> : <?php echo $lastname; ?><br>
         <strong>Numero de Téléphone</strong> : <?php echo $phone; ?><br>
         <strong>Adresse</strong> : <?php echo $address; ?><br>
-        <strong>Pays</strong> s: <?php echo $country; ?><br>
+        <strong>Pays</strong> : <?php echo $country; ?><br>
         <strong>Dernier diplôme</strong> : <?php echo $lastdiploma; ?><br>
     </p>
     <p>
