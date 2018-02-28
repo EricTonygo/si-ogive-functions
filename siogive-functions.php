@@ -183,7 +183,7 @@ function myplugin_add_registration_fields() {
     ?>
 
     <p>
-        <label for="user_extra"><?php _e('Extra Field', 'gpdealdomain') ?><br />
+        <label for="user_extra"><?php _e('Extra Field', 'siogivedomain') ?><br />
             <input type="text" name="user_extra" id="user_extra" class="input" value="<?php echo esc_attr(stripslashes($user_extra)); ?>" size="25" /></label>
     </p>
 
@@ -733,15 +733,15 @@ function signin($username, $password, $remember = null, $redirect_to = null) {
 //            wp_safe_redirect(get_permalink(get_page_by_path(__('connexion', 'siogivedomain'))));
 //            exit;
 //        } else {
-            $creds = array('user_login' => $user->data->user_login, 'user_password' => $password, 'remember' => $remember);
-            $secure_cookie = is_ssl() ? true : false;
-            $user = wp_signon($creds, $secure_cookie);
-            if ($redirect_to) {
-                wp_safe_redirect($redirect_to);
-            } else {
-                wp_safe_redirect(home_url('/'));
-            }
-            exit;
+        $creds = array('user_login' => $user->data->user_login, 'user_password' => $password, 'remember' => $remember);
+        $secure_cookie = is_ssl() ? true : false;
+        $user = wp_signon($creds, $secure_cookie);
+        if ($redirect_to) {
+            wp_safe_redirect($redirect_to);
+        } else {
+            wp_safe_redirect(home_url('/'));
+        }
+        exit;
 //        }
     } else {
         $_SESSION['signin_error'] = __("Nom d'utilisateur ou mot de passe incorrect");
@@ -812,10 +812,10 @@ function gp_reset_password() {
     if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
         $old_password = esc_attr($_POST['old_password']);
         if ($current_user && wp_check_password($old_password, $current_user->data->user_pass, $current_user->ID)) {
-            $json = array("message" => __("Correct informations", "gpdealdomain"));
+            $json = array("message" => __("Correct informations", "siogivedomain"));
             return wp_send_json_success($json);
         } else {
-            $json = array("message" => __("Incorrect password", "gpdealdomain"));
+            $json = array("message" => __("Incorrect password", "siogivedomain"));
             return wp_send_json_error($json);
         }
     } else {
@@ -827,7 +827,7 @@ function gp_reset_password() {
             wp_safe_redirect(home_url('/'));
             exit;
         } else {
-            $_SESSION['reset_password_error'] = __("Unable to change password", "gpdealdomain");
+            $_SESSION['reset_password_error'] = __("Unable to change password", "siogivedomain");
             wp_safe_redirect(get_permalink(get_page_by_path(__("modifier-mon-mot-de-passe", 'siogivedomain'))));
             exit;
         }
@@ -901,10 +901,14 @@ function saveAdditive($additive_data) {
         $subject = $additive_data['subject'];
         $domain = $additive_data['main_domain'];
         $sub_domain = $additive_data['sub_domain'];
+        $owner = $additive_data['owner'];
+        $publication_date = new \DateTime(date('Y-m-d H:i:s', strtotime(str_replace('/', '-', $additive_data['publication_date']))));
+        $opening_date = new \DateTime(date('Y-m-d H:i:s', strtotime(str_replace('/', '-', $additive_data['opening_date']))));
+        $deadline = new \DateTime(date('Y-m-d H:i:s', strtotime(str_replace('/', '-', $additive_data['deadline']))));
         $additive_files_ids = $additive_data['additive_files_ids'];
         $post_args = array(
             'post_title' => $reference,
-            'post_name'=> explode("/", $reference)[0],
+            'post_name' => explode("/", $reference)[0],
             'post_content' => $subject,
             'post_type' => 'additive',
             'post_status' => 'publish',
@@ -912,6 +916,10 @@ function saveAdditive($additive_data) {
                 'reference' => $reference,
                 'main-domain' => $domain,
                 'sub-domain' => $sub_domain,
+                'owner' => $owner,
+                'publication-date' =>$publication_date,
+                'opening-date' => $opening_date,
+                'deadline' => $deadline,
                 'detail-files-IDs' => $additive_files_ids
             )
         );
@@ -939,10 +947,14 @@ function saveCallOffer($callOffer_data) {
         $subject = $callOffer_data['subject'];
         $domain = $callOffer_data['main_domain'];
         $sub_domain = $callOffer_data['sub_domain'];
+        $owner = $callOffer_data['owner'];
+        $publication_date = new \DateTime(date('Y-m-d H:i:s', strtotime(str_replace('/', '-', $callOffer_data['publication_date']))));
+        $opening_date = new \DateTime(date('Y-m-d H:i:s', strtotime(str_replace('/', '-', $callOffer_data['opening_date']))));
+        $deadline = new \DateTime(date('Y-m-d H:i:s', strtotime(str_replace('/', '-', $callOffer_data['deadline']))));
         $callOffer_files_ids = $callOffer_data['call_offer_files_ids'];
         $post_args = array(
             'post_title' => $reference,
-            'post_name'=> explode("/", $reference)[0],
+            'post_name' => explode("/", $reference)[0],
             'post_content' => $subject,
             'post_type' => 'call-offer',
             'post_status' => 'publish',
@@ -950,6 +962,10 @@ function saveCallOffer($callOffer_data) {
                 'reference' => $reference,
                 'main-domain' => $domain,
                 'sub-domain' => $sub_domain,
+                'owner' => $owner,
+                'publication-date' =>$publication_date,
+                'opening-date' => $opening_date,
+                'deadline' => $deadline,
                 'detail-files-IDs' => $callOffer_files_ids
             )
         );
@@ -977,10 +993,14 @@ function saveAssignment($assignment_data) {
         $subject = $assignment_data['subject'];
         $domain = $assignment_data['main_domain'];
         $sub_domain = $assignment_data['sub_domain'];
+        $owner = $assignment_data['owner'];
+        $publication_date = new \DateTime(date('Y-m-d H:i:s', strtotime(str_replace('/', '-', $assignment_data['publication_date']))));
+        $opening_date = new \DateTime(date('Y-m-d H:i:s', strtotime(str_replace('/', '-', $assignment_data['opening_date']))));
+        $deadline = new \DateTime(date('Y-m-d H:i:s', strtotime(str_replace('/', '-', $assignment_data['deadline']))));
         $assignment_files_ids = $assignment_data['assignment_files_ids'];
         $post_args = array(
             'post_title' => $reference,
-            'post_name'=> explode("/", $reference)[0],
+            'post_name' => explode("/", $reference)[0],
             'post_content' => $subject,
             'post_type' => 'assignment',
             'post_status' => 'publish',
@@ -988,6 +1008,10 @@ function saveAssignment($assignment_data) {
                 'reference' => $reference,
                 'main-domain' => $domain,
                 'sub-domain' => $sub_domain,
+                'owner' => $owner,
+                'publication-date' =>$publication_date,
+                'opening-date' => $opening_date,
+                'deadline' => $deadline,
                 'detail-files-IDs' => $assignment_files_ids
             )
         );
@@ -1015,10 +1039,14 @@ function saveExpressionInterest($expressionInterest_data) {
         $subject = $expressionInterest_data['subject'];
         $domain = $expressionInterest_data['main_domain'];
         $sub_domain = $expressionInterest_data['sub_domain'];
+        $owner = $expressionInterest_data['owner'];
+        $publication_date = new \DateTime(date('Y-m-d H:i:s', strtotime(str_replace('/', '-', $expressionInterest_data['publication_date']))));
+        $opening_date = new \DateTime(date('Y-m-d H:i:s', strtotime(str_replace('/', '-', $expressionInterest_data['opening_date']))));
+        $deadline = new \DateTime(date('Y-m-d H:i:s', strtotime(str_replace('/', '-', $expressionInterest_data['deadline']))));
         $expressionInterest_files_ids = $expressionInterest_data['expression_interest_files_ids'];
         $post_args = array(
             'post_title' => $reference,
-            'post_name'=> explode("/", $reference)[0],
+            'post_name' => explode("/", $reference)[0],
             'post_content' => $subject,
             'post_type' => 'expression-interest',
             'post_status' => 'publish',
@@ -1026,6 +1054,10 @@ function saveExpressionInterest($expressionInterest_data) {
                 'reference' => $reference,
                 'main-domain' => $domain,
                 'sub-domain' => $sub_domain,
+                'owner' => $owner,
+                'publication-date' =>$publication_date,
+                'opening-date' => $opening_date,
+                'deadline' => $deadline,
                 'detail-files-IDs' => $expressionInterest_files_ids
             )
         );
@@ -1305,4 +1337,142 @@ function auto_version($file) {
 
     $mtime = filemtime($_SERVER['DOCUMENT_ROOT'] . $file);
     return preg_replace('{\\.([^./]+)$}', ".$mtime.\$1", $file);
+}
+
+//Function to get and echo all reply of comment recursively
+function getAndechoAllReply($post_id, $comment_id) {
+    $comments_children_view_content = "";
+    if ($post_id && $comment_id) {
+        $comments_children = get_comments(array('post_id' => $post_id, "parent" => $comment_id, "orderby" => "comment_date", "order" => "asc"));
+        if ($comments_children && !empty($comments_children)) {
+            ob_start();
+            ?>
+            <div class="comments">
+                <?php
+                foreach ($comments_children as $comment):
+                    $comment_user = get_userdata($comment->user_id);
+                    ?>
+                    <div class="comment">
+                        <a class="avatar">
+                            <?php echo get_avatar(get_the_author_meta('ID'), 64); ?>
+                        </a>
+                        <div class="content">
+                            <a class="author"><?php echo $comment_user->user_login; ?></a>
+                            <div class="metadata">
+                                <div class="date"><?php
+                                    $date = apply_filters('get_comment_time', $comment->comment_date, 'U', false, true, $comment);
+                                    echo __("a répondu il y a", "siogivedomain") . " " . human_time_diff(strtotime($date), current_time('timestamp'));
+                                    ?></div>
+                            </div>
+                            <div class="text">
+                                <p><?php echo $comment->comment_content; ?></p>
+                            </div>
+                            <div class="actions">
+                                <a id="show_comment_reply_form<?php echo $comment->comment_ID; ?>" onclick="show_comment_reply_form(<?php echo $comment->comment_ID; ?>)" class="reply"><i class="reply icon"></i><?php echo __("Répondre", "siogivedomain") ?></a>
+                                <a id="hide_comment_reply_form<?php echo $comment->comment_ID; ?>" onclick="hide_comment_reply_form(<?php echo $comment->comment_ID; ?>)" class="reply" style="display: none"><?php echo __("Annuler", "siogivedomain") ?></a>
+                                <?php 
+                                    $comments_children_count = count(get_comments(array('post_id' => $post_id, "parent" => $comment->comment_ID, "orderby" => "comment_date", "order" => "asc")));
+                                ?>
+                                <?php if($comments_children_count >= 1): ?>
+                                <a id="show_all_reply_comment<?php echo $comment->comment_ID; ?>" onclick="show_all_reply_comment(<?php echo $comment->comment_ID; ?>)" class="reply"><?php echo $comments_children_count." ".__("réponse", "siogivedomain") ?>(s)<i class="chevron down icon"></i></a>
+                                <a id="hide_all_reply_comment<?php echo $comment->comment_ID; ?>" onclick="hide_all_reply_comment(<?php echo $comment->comment_ID; ?>)" class="reply" style="display: none;"><?php echo $comments_children_count." ".__("réponse", "siogivedomain") ?>(s)<i class="chevron up icon"></i></a>
+                                <?php endif ?>
+                            </div>
+                        </div>
+                        <div id="all_reply_comment<?php echo $comment->comment_ID; ?>" style="display: none;">
+                        <?php echo getAndechoAllReply($post_id, $comment->comment_ID); ?>
+                        </div>
+                    </div>
+                    <form id="comment_reply_form<?php echo $comment->comment_ID; ?>" class="ui reply form add_comment_reply_form" method="POST" action="<?php echo get_permalink($post_id); ?>" onsubmit="add_comment_reply(event, <?php echo $comment->comment_ID; ?>)" style="display: none">
+                        <?php if (!is_user_logged_in()): ?>
+                            <div class="two fields">
+                                <div class="field">
+                                    <label><?php _e("Votre nom", "siogivedomain"); ?><em>*</em></label>
+                                    <div class="one field">
+                                        <div class="field"> 
+                                            <input type="text" name="comment_author" placeholder="<?php _e("Votre nom", "booksharedomain"); ?>" >
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label><?php _e("Votre e-mail", "siogivedomain"); ?><em>*</em></label>
+                                    <div class="field">
+                                        <input type="text"  name="comment_author_email" placeholder="Votre e-mail" >
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif ?>
+                        <div class="field">
+                            <textarea rows="4" name="comment_content" placeholder="<?php _e("Saissez votre reponse", "siogivedomain"); ?>"></textarea>
+                        </div>
+                        <input type="hidden" name="action" value="add-comment-reply">
+                        <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
+                        <input type="hidden" name="comment_parent_id" value="<?php echo $comment->comment_ID; ?>">
+                        <div class="field">
+                            <div id="server_error_message<?php echo $comment->comment_ID; ?>" class="ui negative message" style="display:none">
+                                <i class="close icon"></i>
+                                <div id="server_error_content<?php echo $comment->comment_ID; ?>" class="header"><?php _e("Internal server error", "siogivedomain"); ?></div>
+                            </div>
+                            <div id="error_name_message<?php echo $comment->comment_ID; ?>" class="ui error message" style="display: none">
+                                <i class="close icon"></i>
+                                <div id="error_name_header<?php echo $comment->comment_ID; ?>" class="header"></div>
+                                <ul id="error_name_list<?php echo $comment->comment_ID; ?>" class="list">
+
+                                </ul>
+                            </div>
+                        </div>
+                        <button class="ui blue submit icon button">
+                            <i class="icon edit"></i> <?php _e("Repondre", "siogivedomain"); ?>
+                        </button>
+                    </form>
+                <?php endforeach; ?>
+            </div>
+            <?php
+            $comments_children_view_content = ob_get_contents();
+            ob_end_clean();
+        }
+    }
+    return $comments_children_view_content;
+}
+
+//Function for adding a comment to an evaluation 
+function add_comment_reply($comment_reply_data) {
+    $comment_id = null;
+    if (is_array($comment_reply_data) && !empty($comment_reply_data)) {
+        $commentdata = array(
+            'comment_post_ID' => $comment_reply_data['comment_post_ID'], // to which post the comment will show up
+            'comment_author' => $comment_reply_data['comment_author'], //fixed value - can be dynamic 
+            'comment_author_email' => $comment_reply_data['comment_author_email'], //fixed value - can be dynamic 
+            'comment_author_url' => $comment_reply_data['comment_author_url'], //fixed value - can be dynamic 
+            'comment_content' => $comment_reply_data['comment_content'], //fixed value - can be dynamic 
+            'comment_type' => '', //empty for regular comments, 'pingback' for pingbacks, 'trackback' for trackbacks
+            'comment_parent' => $comment_reply_data['comment_parent'], //0 if it's not a reply to another comment; if it's a reply, mention the parent comment ID here
+            'user_id' => $comment_reply_data['user_id'], //passing current user ID or any predefined as per the demand
+        );
+
+        //Insert new comment and get the comment ID
+        $comment_id = wp_new_comment($commentdata);
+    }
+    return $comment_id;
+}
+
+//Function for adding a comment to a post 
+function add_post_comment($comment_data) {
+    $comment_id = null;
+    if (is_array($comment_data) && !empty($comment_data)) {
+        $commentdata = array(
+            'comment_post_ID' => $comment_data['comment_post_ID'], // to which post the comment will show up
+            'comment_author' => $comment_data['comment_author'], //fixed value - can be dynamic 
+            'comment_author_email' => $comment_data['comment_author_email'], //fixed value - can be dynamic 
+            'comment_author_url' => $comment_data['comment_author_url'], //fixed value - can be dynamic 
+            'comment_content' => $comment_data['comment_content'], //fixed value - can be dynamic 
+            'comment_type' => '', //empty for regular comments, 'pingback' for pingbacks, 'trackback' for trackbacks
+            'comment_parent' => 0, //0 if it's not a reply to another comment; if it's a reply, mention the parent comment ID here
+            'user_id' => $comment_data['user_id'], //passing current user ID or any predefined as per the demand
+        );
+
+        //Insert new comment and get the comment ID
+        $comment_id = wp_new_comment($commentdata);
+    }
+    return $comment_id;
 }
